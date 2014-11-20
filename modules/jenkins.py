@@ -1,3 +1,12 @@
+'''
+add this to ~/.willie/default.cfg
+
+[jenkins]
+url = http://jenkins.example.com
+user = your-jenkins-username
+key = your-jenkins-api-key
+'''
+
 import re
 import operator
 import os
