@@ -22,6 +22,24 @@ class Jenkins(object):
     def __init__(self, url, auth):
         self.url = url
         self.auth = auth
+        self._jobs_index = {}
+
+    @property
+    def jobs_index(self):
+        index = {}
+        if not self._jobs_index:
+            jobs = self.get_all_jobs()
+            for job in jobs:
+                name = job['name']
+                url = job['url']
+                words = NON_WORD_RE.split(name)
+                for word in words:
+                    index.setdefault(word, set()).add(url)
+            self._jobs_index = index
+        return self._jobs_index
+
+
+
 
     def get(self, url, auth=None):
         resp = requests.get(url, auth=auth or self.auth)
@@ -34,72 +52,23 @@ class Jenkins(object):
 
     def get_all_jobs(self):
         url = self.url+'/api/json'
+        print('Getting all jobs: {}'.format(url))
         return requests.get(url, auth=self.auth).json()['jobs']
 
-    def update_jobs_with_tanimoto(self, jobs, words, letters):
-        for job in jobs:
-            score_words = tanimoto(words, bag_of_words(job['name']))
-            score_letters = tanimoto(letters, bag_of_letters(job['name']))
-            job['tanimoto'] = (score_words*0.0) + (score_letters*1.0)
-        return jobs
-
-    def update_jobs_with_similarity_score(self, jobs, user_input):
-        words = bag_of_words(user_input)
-        for job in jobs:
-            job['similarityscore'] = similarity_score_of(user_input, job['name']) + tanimoto(words, bag_of_words(job['name']))
-        return jobs
-
-    def find_job_using_tanimoto(self, *args):
-        all_jobs = self.get_all_jobs()
-        user_input = '-'.join(args)
-        words = bag_of_words(user_input)
-        letters = bag_of_letters(user_input)
-        self.update_jobs_with_tanimoto(all_jobs, words, letters)
-        return sorted(all_jobs, key=operator.itemgetter('tanimoto'), reverse=True)[0]
-    
     def find_job(self, *args):
-        all_jobs = self.get_all_jobs()
-        user_input = '-'.join(args)
-        self.update_jobs_with_similarity_score(all_jobs, user_input)
-        return sorted(all_jobs, key=operator.itemgetter('similarityscore'), reverse=True)[0]
-
-    def find_jobs(self, line, limit=4):
-        all_jobs = self.get_all_jobs()
-        self.update_jobs_with_similarity_score(all_jobs, line)
-        return sorted(all_jobs, key=operator.itemgetter('similarityscore'), reverse=True)[:limit]
+        candidates = {}
+        for arg in args:
+            for url in self.jobs_index.get(arg, set()):
+                candidates[url] = candidates.setdefault(url, 0) + 1
+        result = sorted(candidates.items(), key=lambda (x,y): y)
+        if result:
+            return result[-1][0]
 
 
     def build(self, build_name):
         job = self.find_job(build_name)
         url = job['url']+'build'
         resp = self.post(url)
-
-
-def normalize_str(x):
-    return NON_WORD_RE.sub('', x.lower())
-
-def similarity_score_of(a, b):
-    a = normalize_str(a)
-    b = normalize_str(b)
-    score = 0
-    for i,x in enumerate(b):
-        j = a.find(b[i])
-        if j != -1:
-            a = a[j+1:]
-            score += 1
-    return score
-
-
-
-def bag_of_words(sentence):
-    return set(NON_WORD_RE.sub(' ', sentence.lower()).split())
-
-def bag_of_letters(sentence):
-    return set(NON_WORD_RE.sub('', sentence.lower()))
-
-def tanimoto(a, b):
-    return len(a.intersection(b)) * 1.0/len(a.union(b))
-
 
 
 regex_tag = re.compile(r"^v\d+")
@@ -149,7 +118,9 @@ def lastly(bot, trigger):
         return bot.reply('need jenkins project name')
     jenkinsapi = bot.memory['jenkins']
     job = jenkinsapi.find_job(*input_line)
-    url = os.path.join(job['url'], 'lastBuild/api/json')
+    if not job:
+        return bot.reply('Cannot find suitable jenkins job: {}'.format(' '.join(input_line)))
+    url = os.path.join(job, 'lastBuild/api/json')
     resp = jenkinsapi.get(url)
     if not resp:
         return bot.reply('No build on: '+url)
@@ -158,20 +129,11 @@ def lastly(bot, trigger):
         github_link = get_github_link(built_branch_name, project_home_url)
     except:
         github_link = None
-    bot.reply('%s build lastly started by "%s" (%s) on %s (%s) => %s | %s (%s) | %s' % (
-            job['name'],
+    bot.reply('%s lastly started by "%s" (%s) on %s (%s) => %s | %s (%s) | %s' % (
+            resp['fullDisplayName'],
             started_by, started_by_id,
             datetime.datetime.fromtimestamp(resp['timestamp']/1000).isoformat(),
             resp['url'],
             resp.get('result', 'NO RESULT'),
             built_branch_name, github_link, built_sha1))
-
-@commands('jf')
-def jenkins_find(bot, trigger):
-    input_line = trigger.group(2).split()
-    if not input_line:
-        return bot.reply('Usage: .jf jenkins project name to search')
-    jenkinsapi = bot.memory['jenkins']
-    jobs = jenkinsapi.find_jobs(input_line, 4)
-    return bot.reply(' | '.join(('%s (%.1f)' % (x['name'], x['similarityscore']) for x in jobs)))
 
