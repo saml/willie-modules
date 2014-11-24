@@ -16,6 +16,9 @@ import datetime
 import requests
 from willie.module import commands
 
+sys.path.append(os.path.dirname(__file__))
+from searchindex import SearchIndex
+
 NON_WORD_RE = re.compile(r'\W+')
 
 class Jenkins(object):
@@ -26,19 +29,11 @@ class Jenkins(object):
 
     @property
     def jobs_index(self):
-        index = {}
         if not self._jobs_index:
             jobs = self.get_all_jobs()
-            for job in jobs:
-                name = job['name']
-                url = job['url']
-                words = NON_WORD_RE.split(name)
-                for word in words:
-                    index.setdefault(word, set()).add(url)
-            self._jobs_index = index
+            items = ((job['url'],job['name']) for job in jobs)
+            self._jobs_index = SearchIndex(items)
         return self._jobs_index
-
-
 
 
     def get(self, url, auth=None):
@@ -56,13 +51,7 @@ class Jenkins(object):
         return requests.get(url, auth=self.auth).json()['jobs']
 
     def find_job(self, *args):
-        candidates = {}
-        for arg in args:
-            for url in self.jobs_index.get(arg, set()):
-                candidates[url] = candidates.setdefault(url, 0) + 1
-        result = sorted(candidates.items(), key=lambda (x,y): y)
-        if result:
-            return result[-1][0]
+        return self.jobs_index.find(args)
 
 
     def build(self, build_name):
