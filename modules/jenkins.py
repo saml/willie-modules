@@ -17,7 +17,7 @@ import requests
 from willie.module import commands
 
 sys.path.append(os.path.dirname(__file__))
-from searchindex import SearchIndex
+from botutils import SearchIndex
 
 NON_WORD_RE = re.compile(r'\W+')
 
