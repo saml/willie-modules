@@ -11,6 +11,7 @@ from willie.module import commands
 
 sys.path.append(os.path.dirname(__file__))
 from botutils import GithubApi
+import botutils
 
 def setup(bot):
     token = bot.config.github.token
@@ -44,5 +45,11 @@ def release(bot, trigger):
         compare_url = project.get_compare_url(base, version)
         bot.reply('Diff: {}'.format(compare_url))
     else:
-        compare_url = project.get_compare_url(base)
-        bot.reply('Last release of {}: {} | Diff: {}'.format(project.name, base, compare_url))
+        next_version = botutils.suggest_next_version(base)
+        compare_url = project.get_compare_url(base, next_version)
+        compare_with_master_url = project.get_compare_url(base, 'master')
+        release_url = project.get_release_url(base)
+        bot.reply('Last release of {}: {} - {} | Suggested next version: {} - {} | Future diff: {}'.format(
+            project.name, base, release_url, 
+            next_version, compare_with_master_url,
+            compare_url))

@@ -33,7 +33,7 @@ def sort_versions(versions, get_version=None, descending=True):
     '''sorted version strings in ascending order.
     
     >>> sort_versions(['v0.0.1', '1.1.1-3', '0.3', '1', '1.1.1-2'])
-    ['v0.0.1', '0.3', '1', '1.1.1-2', '1.1.1-3']
+    ['1.1.1-3', '1.1.1-2', '1', '0.3', 'v0.0.1']
     '''
     if get_version is None:
         get_version = lambda x: x
@@ -55,6 +55,31 @@ def sort_versions(versions, get_version=None, descending=True):
     if descending:
         results.reverse()
     return [version for version,_,_ in results]
+
+def suggest_next_version(last_tag_name):
+    '''increments minor version
+    
+    >>> suggest_next_version('1')
+    'v1.0.1'
+    
+    >>> suggest_next_version('1.2.3')
+    'v1.2.4'
+    
+    >>> suggest_next_version('1.2.3-4')
+    'v1.2.4'
+    '''
+    parsed = parse_version(last_tag_name)
+    length = len(parsed)
+
+    # ensure three numbers
+    if length < 3:
+        parsed.extend([0]*(3-length))
+
+    # increment minor version
+    parsed[2] = parsed[2] + 1
+
+    return 'v' + '.'.join(str(num) for num in parsed[:3]) 
+
 
 
 def get_all(paginated_list):
@@ -80,6 +105,9 @@ class GithubRepo(object):
 
     def get_compare_url(self, base, head='master'):
         return '{}/compare/{}...{}'.format(self.repo.html_url, base, head)
+
+    def get_release_url(self, tag_name):
+        return '{}/releases/tag/{}'.format(self.repo.html_url, tag_name)
 
     def __getattr__(self, attrib):
         return getattr(self.repo, attrib)
