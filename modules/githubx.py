@@ -7,54 +7,10 @@ organizations = comma,separated,organization,list
 import sys
 import os
 
-from github import Github
 from willie.module import commands
 
 sys.path.append(os.path.dirname(__file__))
-from botutils import SearchIndex
-
-class GithubApi(object):
-    def __init__(self, token, organizations):
-        self.token = token
-        self.organizations = organizations
-        self.api = Github(token)
-        self._projects_index = {}
-        self._projects = []
-    
-    def _extend_projects(self, repos):
-        i = 0
-        while True:
-            page = repos.get_page(i)
-            if len(page) < 1:
-                break
-            self._projects.extend(page)
-            i += 1
-
-
-    def get_all_projects(self, include_user_repos=False):
-        if not self._projects:
-            for organization in self.organizations:
-                org = self.api.get_organization(organization)
-                repos = org.get_repos()
-                self._extend_projects(repos)
-
-            if include_user_repos:
-                repos = self.api.get_user().get_repos()
-                self._extend_projects(repos)
-
-        return self._projects
-
-    @property
-    def projects_index(self):
-        if not self._projects_index:
-            projects = self.get_all_projects()
-            items = ((project, project.name) for project in projects)
-            self._projects_index = SearchIndex(items)
-        return self._projects_index
-
-    def find(self, *words):
-        return self.projects_index.find(words)
-
+from botutils import GithubApi
 
 def setup(bot):
     token = bot.config.github.token
@@ -64,9 +20,29 @@ def setup(bot):
 @commands('release')
 def release(bot, trigger):
     api = bot.memory['githubx']
-    args = trigger.group(2).split()
-    project = api.find(*args)
+    argline = trigger.group(2)
+    args = argline.split(':') if argline else []
+    argc = len(args)
+    words = []
+    version = None
+    if argc == 2:
+        words,version = args
+        words = words.split(' ')
+    elif argc == 1:
+        words = args[0].split(' ')
+    else:
+        return bot.reply('Usage: project name[:new version]')
+    
+    project = api.find(*words)
     if not project:
-        return bot.reply('Cannot find suitable project: {}'.format(' '.join(args)))
-    bot.reply('Found: {}'.format(project.id))
+        return bot.reply('Cannot find suitable project: {}'.format(' '.join(words)))
 
+    tags = project.get_latest_releases()
+    base = tags[0].name if tags else 'master'
+
+    if version:
+        compare_url = project.get_compare_url(base, version)
+        bot.reply('Diff: {}'.format(compare_url))
+    else:
+        compare_url = project.get_compare_url(base)
+        bot.reply('Last release of {}: {} | Diff: {}'.format(project.name, base, compare_url))

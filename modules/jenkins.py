@@ -102,13 +102,14 @@ def setup(bot):
 
 @commands('lastly')
 def lastly(bot, trigger):
-    input_line = trigger.group(2).split()
-    if not input_line:
+    argline = trigger.group(2) or ''
+    args = argline.split()
+    if not args:
         return bot.reply('need jenkins project name')
     jenkinsapi = bot.memory['jenkins']
-    job = jenkinsapi.find_job(*input_line)
+    job = jenkinsapi.find_job(*args)
     if not job:
-        return bot.reply('Cannot find suitable jenkins job: {}'.format(' '.join(input_line)))
+        return bot.reply('Cannot find suitable jenkins job: {}'.format(argline))
     url = os.path.join(job, 'lastBuild/api/json')
     resp = jenkinsapi.get(url)
     if not resp:
