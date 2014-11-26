@@ -8,7 +8,7 @@ DIGITS = re.compile(r'(\d+)')
 class SearchIndex(object):
     def __init__(self, items):
         '''items is [(key,content)].
-        both key and content are string.'''
+        content must be string.'''
         index = {}
         for k,v in items:
             words = NON_WORD_RE.split(v)
@@ -48,6 +48,7 @@ def sort_versions(versions, get_version=None, descending=True):
             max_digits = digits
         results.append((version,digits,parsed))
 
+    # 0 pad ljust max digits
     for vesion,digits,parsed in results:
         parsed.extend([0] * (max_digits - digits))
 
