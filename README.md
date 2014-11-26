@@ -1,7 +1,7 @@
 # Quickstart
 
-Install [willie](http://willie.dftba.net/) and run it.
-Edit `~/.willie/default.cfg`:
+Install [willie](http://willie.dftba.net/) and run it to generate `~/.willie/default.cfg`.
+Edit `default.cfg`:
 
 ```
 [core]
@@ -24,3 +24,5 @@ And, install requirements and run:
 pip install -r requirements.txt
 willie
 ```
+
+You may use virtualenv.
