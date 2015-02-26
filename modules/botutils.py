@@ -1,6 +1,6 @@
 import re
 
-from github import Github
+import github3
 
 NON_WORD_RE = re.compile(r'\W+')
 DIGITS = re.compile(r'(\d+)')
@@ -83,27 +83,14 @@ def suggest_next_version(last_tag_name):
     return prefix + '.'.join(str(num) for num in parsed[:3]) 
 
 
-
-def get_all(paginated_list):
-    result = []
-    i = 0
-    while True:
-        page = paginated_list.get_page(i)
-        if len(page) < 1:
-            break
-        result.extend(page)
-        i += 1
-    return result
-
 class GithubRepo(object):
     def __init__(self, repo):
         self.repo = repo
 
-    def get_latest_releases(self, limit=3):
-        tags = self.repo.get_tags().get_page(0)
-        if tags:
-            return sort_versions(tags, lambda tag: tag.name)[:limit]
-        return []
+    def get_latest_release(self):
+        l = list(self.repo.iter_releases(1))
+        if l:
+            return l[0]
 
     def get_compare_url(self, base, head='master'):
         return '{}/compare/{}...{}'.format(self.repo.html_url, base, head)
@@ -118,20 +105,16 @@ class GithubApi(object):
     def __init__(self, token, organizations):
         self.token = token
         self.organizations = organizations
-        self.api = Github(token)
+        self.api = github3.GitHub(token=token)
         self._projects_index = {}
         self._projects = []
     
-    def get_all_projects(self, include_user_repos=False):
+    def get_all_projects(self):
         if not self._projects:
             for organization in self.organizations:
-                org = self.api.get_organization(organization)
-                repos = org.get_repos()
-                self._projects.extend(get_all(repos))
-
-            if include_user_repos:
-                repos = self.api.get_user().get_repos()
-                self._projects.extend(get_all(repos))
+                org = self.api.organization(organization)
+                if org:
+                    self._projects.extend(org.iter_repos())
 
         return self._projects
 

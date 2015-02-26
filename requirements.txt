@@ -1,2 +1,2 @@
-PyGithub
+github3.py
 requests
