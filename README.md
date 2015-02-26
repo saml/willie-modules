@@ -1,12 +1,24 @@
-# Manual
+# Usage
 
-command|what
---------|-------
-.lastly jenkins build name|last build
-.next github project name|suggests next release version
-.release github project name|creates github release with automatically suggested version
-.release github project name`|`release title|creates github release with given title
-.release github project name`|`release title`|`version|creates github release with given title and specific version
+Given github project `foobar` and jenkins build `foobar-prd`:
+
+
+```sh
+# Gives latest jenkins build info.
+.lastly foobar prd
+
+# Suggests next release version.
+.next foobar
+
+# Creates github release with suggested version.
+.release foobar
+
+# Creates github release with suggested version. Release title is also specified.
+.release foobar|fixing some bug
+
+# Creates github release with specified version and title.
+. release foobar|fixing some bug|v1.0.0
+```
 
 # Quickstart
 
