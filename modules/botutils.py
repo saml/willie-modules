@@ -61,12 +61,12 @@ def suggest_next_version(last_tag_name):
     '''increments minor version
     
     >>> suggest_next_version('1')
-    'v1.0.1'
+    '1.0.1'
     
     >>> suggest_next_version('1.2.3')
-    'v1.2.4'
+    '1.2.4'
     
-    >>> suggest_next_version('1.2.3-4')
+    >>> suggest_next_version('v1.2.3-4')
     'v1.2.4'
     '''
     parsed = parse_version(last_tag_name)
@@ -79,7 +79,8 @@ def suggest_next_version(last_tag_name):
     # increment minor version
     parsed[2] = parsed[2] + 1
 
-    return 'v' + '.'.join(str(num) for num in parsed[:3]) 
+    prefix = 'v' if last_tag_name.startswith('v') else ''
+    return prefix + '.'.join(str(num) for num in parsed[:3]) 
 
 
 
