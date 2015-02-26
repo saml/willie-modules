@@ -38,7 +38,8 @@ def nextver(bot, trigger):
         return bot.reply('Cannot find suitable project: {}'.format(argline))
     
     release,base,next_version = find_latest_release(repo)
-    bot.reply('Next version: {} | Current version: {}'.format(next_version, base))
+    compare_url = repo.get_compare_url(base)
+    bot.reply('Next suggested version: {} | Current version: {} | Diff: {}'.format(next_version, base, compare_url))
 
 
 @commands('release')
