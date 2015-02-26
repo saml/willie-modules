@@ -1,3 +1,13 @@
+# Manual
+
+command|what
+--------|-------
+.lastly jenkins build name|last build
+.next github project name|suggests next release version
+.release github project name|creates github release with automatically suggested version
+.release github project name`|`release title|creates github release with given title
+.release github project name`|`release title`|`version|creates github release with given title and specific version
+
 # Quickstart
 
 Install [willie](http://willie.dftba.net/) and run it to generate `~/.willie/default.cfg`.
