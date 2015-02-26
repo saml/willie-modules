@@ -44,17 +44,22 @@ def nextver(bot, trigger):
 @commands('release')
 def release(bot, trigger):
     argline = trigger.group(2)
-    args = argline.split(':') if argline else []
+    argline = argline.replace('http://', '') if argline else '' # slack adds http:// to url-like string
+    args = argline.split('|') if argline else []
     argc = len(args)
     words = []
     version = None
-    if argc == 2:
-        words,version = args
+    title = None
+    if argc == 3:
+        words,title,version = args
+        words = words.split(' ')
+    elif argc == 2:
+        words,title = args
         words = words.split(' ')
     elif argc == 1:
         words = args[0].split(' ')
     else:
-        bot.reply('Usage: project name[:new version]')
+        bot.reply('Usage: project name[|title[|new version]]')
         return
 
     api = bot.memory['githubx']
@@ -67,6 +72,6 @@ def release(bot, trigger):
         version = suggested_version
 
     compare_url = repo.get_compare_url(base, version)
-    new_release = repo.create_release(version, body=compare_url)
+    new_release = repo.create_release(version, body=compare_url, name=title)
     bot.reply('New release created: {}'.format(new_release.html_url))
 
