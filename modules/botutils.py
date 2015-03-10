@@ -25,7 +25,7 @@ class SearchIndex(object):
 
         for k,count in candidates.items():
             # adjust count so that longer key requires more words to match
-            candidates[k] = count/float(len(str(k)))
+            candidates[k] = count + (count/float(len(str(k))))
 
         result = sorted(candidates.items(), key=lambda (k,count): count)
         if result:
