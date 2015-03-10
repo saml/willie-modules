@@ -22,6 +22,11 @@ class SearchIndex(object):
         for word in words:
             for k in self.index.get(word, set()):
                 candidates[k] = candidates.setdefault(k, 0) + 1
+
+        for k,count in candidates.items():
+            # adjust count so that longer key requires more words to match
+            candidates[k] = count/float(len(str(k)))
+
         result = sorted(candidates.items(), key=lambda (k,count): count)
         if result:
             return result[-1][0]
