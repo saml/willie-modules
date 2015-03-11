@@ -39,7 +39,7 @@ def nextver(bot, trigger):
     
     release,base,next_version = find_latest_release(repo)
     compare_url = repo.get_compare_url(base)
-    bot.reply('Next suggested version: {} | Current version: {} | Diff: {}'.format(next_version, base, compare_url))
+    bot.reply('Next suggested version: {} | Current version: {} | Diff: {}'.format(next_version, release.html_url, compare_url))
 
 
 @commands('release')
