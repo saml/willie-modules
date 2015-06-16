@@ -26,8 +26,8 @@ class SearchIndex(object):
         for k,count in candidates.items():
             # adjust count so that longer key requires more words to match
             candidates[k] = count + (count/float(len(str(k))))
-
-        result = sorted(candidates.items(), key=lambda (k,count): count)
+        
+        result = sorted(candidates.items(), key=lambda x: x[1])
         if result:
             return result[-1][0]
 
@@ -57,7 +57,7 @@ def sort_versions(versions, get_version=None, descending=True):
     for vesion,digits,parsed in results:
         parsed.extend([0] * (max_digits - digits))
 
-    results.sort(key=lambda (version,digits,parsed): parsed)
+    results.sort(key=lambda version,digits,parsed: parsed)
     if descending:
         results.reverse()
     return [version for version,_,_ in results]
@@ -93,7 +93,7 @@ class GithubRepo(object):
         self.repo = repo
 
     def get_latest_release(self):
-        l = list(self.repo.iter_releases(1))
+        l = list(self.repo.releases(1))
         if l:
             return l[0]
 
@@ -119,7 +119,7 @@ class GithubApi(object):
             for organization in self.organizations:
                 org = self.api.organization(organization)
                 if org:
-                    self._projects.extend(org.iter_repos())
+                    self._projects.extend(org.repositories())
 
         return self._projects
 
